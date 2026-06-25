@@ -1,0 +1,6 @@
+node_id,device_type,ip_address,config_text
+RTR-001,Cisco ASR,192.168.1.1,"hostname RTR-001\ninterface GigabitEthernet0/0\n ip address 192.168.1.1 255.255.255.0\n no shutdown\nrouter ospf 1\n network 192.168.1.0 0.0.0.255 area 0"
+RTR-002,Juniper MX,192.168.1.2,"system {\n host-name RTR-002;\n}\ninterfaces {\n ge-0/0/0 {\n unit 0 {\n family inet {\n address 192.168.1.2/24;\n }\n }\n }\n}\nprotocols {\n ospf {\n area 0.0.0.0 {\n interface ge-0/0/0.0;\n }\n }\n}"
+SW-001,Cisco Nexus,192.168.2.1,"hostname SW-001\nvlan 10\n name Data\ninterface Ethernet1/1\n switchport mode access\n switchport access vlan 10\n no shutdown"
+FW-001,Palo Alto,192.168.3.1,"set deviceconfig system hostname FW-001\nset network interface ethernet ethernet1/1 layer3 ip 192.168.3.1/24\nset zone Trust network layer3 ethernet1/1"
+RTR-003,Cisco ISR,192.168.4.1,"hostname RTR-003\ninterface GigabitEthernet0/0\n ip address 192.168.4.1 255.255.255.0\n shutdown\n! note: port is admin down due to maintenance"
