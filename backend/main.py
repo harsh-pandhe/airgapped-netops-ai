@@ -1,3 +1,4 @@
+from graph_manager import graph_manager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -40,6 +41,10 @@ def read_root():
 @app.get("/api/status")
 def status():
     return {"status": "ok", "service": "NetOps ML & RAG"}
+
+@app.get("/api/topology")
+async def get_network_topology():
+    return graph_manager.get_graph_data()
 
 @app.post("/api/predict")
 def predict(data: PredictRequest):

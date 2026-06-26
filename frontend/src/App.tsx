@@ -16,7 +16,7 @@ interface NetworkNode {
   temp: number;
   latency: number;
   loss: number;
-  status: NodeStatus;
+  status: NodeStatus; 
 }
 
 const initialNodes: NetworkNode[] = [
@@ -26,6 +26,27 @@ const initialNodes: NetworkNode[] = [
   { id: 'FW-001', name: 'FW-001 (Perimeter)', type: 'Palo Alto', ip: '192.168.3.1', cpu: 85, memory: 85, temp: 60, latency: 50, loss: 2.0, status: 'loading' },
 ];
 
+const renderMessageWithCitations = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\[.*? Config \(Chunk \d+\)\])/g);
+    
+    return parts.map((part, index) => {
+        if (part.match(/\[.*? Config \(Chunk \d+\)\]/)) {
+            const cleanTitle = part.replace(/[\[\]]/g, ''); 
+            return (
+                <details key={index} className="mt-2 p-2 bg-slate-800 rounded border border-slate-700 text-sm block w-full">
+                    <summary className="cursor-pointer text-cyan-400 hover:text-cyan-300 font-mono font-semibold">
+                        Source: {cleanTitle}
+                    </summary>
+                    <div className="mt-2 p-3 bg-black text-slate-300 font-mono text-xs overflow-x-auto rounded border border-slate-600">
+                        View retrieved context snippet...
+                    </div>
+                </details>
+            );
+        }
+        return <span key={index}>{part}</span>;
+    });
+};
 export default function App() {
   const [nodes, setNodes] = useState<NetworkNode[]>(initialNodes);
   const [chatInput, setChatInput] = useState('');
@@ -170,7 +191,7 @@ export default function App() {
                   </div>
                 )}
                 <div className="whitespace-pre-wrap leading-relaxed text-sm">
-                  {msg.content}
+                  {renderMessageWithCitations(msg.content)}
                 </div>
               </div>
             </div>
