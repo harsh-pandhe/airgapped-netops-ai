@@ -1,27 +1,44 @@
 import networkx as nx
 
-class GraphManager:
+class TopologyGraph:
     def __init__(self):
-        self.graph = nx.Graph()
-        self._initialize_nodes_and_edges()
+        # Create an empty undirected graph
+        self.G = nx.Graph()
 
-    def _initialize_nodes_and_edges(self):
-        # Define devices
-        devices = ["RTR-001", "RTR-002", "SW-001", "FW-001"]
-        self.graph.add_nodes_from(devices)
+    def add_device(self, node_id, data):
+        """Adds a device (node) with metadata like cpu, role, etc."""
+        self.G.add_node(node_id, **data)
 
-        # Define connections (edges)
-        connections = [
-            ("RTR-001", "SW-001"),
-            ("RTR-001", "RTR-002"),
-            ("RTR-002", "FW-001"),
-            ("SW-001", "FW-001")
-        ]
-        self.graph.add_edges_from(connections)
+    def add_connection(self, source, target):
+        """Adds a physical/logical link (edge) between devices."""
+        self.G.add_edge(source, target)
 
     def get_graph_data(self):
-        # Convert graph to a JSON-ready format for the frontend
-        return nx.node_link_data(self.graph)
+        """Formats the graph for your React frontend."""
+        nodes = [{"id": n, **self.G.nodes[n]} for n in self.G.nodes]
+        edges = [{"source": u, "target": v} for u, v in self.G.edges]
+        return {"nodes": nodes, "edges": edges}
 
-# Instantiate the singleton
-graph_manager = GraphManager()
+    def get_neighbors(self, node_id):
+        """Requirement 3 helper: Returns connected devices for RAG traversal."""
+        if node_id in self.G:
+            return list(self.G.neighbors(node_id))
+        return []
+
+    def seed_data(self):
+        """Temporary: Populate with your network devices."""
+        self.add_device("RTR-001", {"label": "Cisco ASR", "ip": "192.168.1.1"})
+        self.add_device("RTR-002", {"label": "Juniper MX", "ip": "192.168.1.2"})
+        self.add_device("SW-001", {"label": "Cisco Nexus", "ip": "192.168.2.1"})
+        self.add_connection("RTR-001", "SW-001")
+        self.add_connection("RTR-002", "SW-001")    
+        
+    def get_neighbor_details(self, node_id):
+        """Fetches all neighbor IDs for a specific node."""
+        if node_id in self.G:
+            # Returns a list of neighbor node IDs
+            return list(self.G.neighbors(node_id))
+        return []    
+
+# Initialize the manager
+manager = TopologyGraph()

@@ -1,3 +1,4 @@
+import TopologyView from './TopologyView';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Activity, Server, AlertTriangle, CheckCircle, Send, Terminal, Loader2 } from 'lucide-react';
@@ -55,6 +56,7 @@ export default function App() {
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'chat' | 'topology'>('chat');
 
   useEffect(() => {
     // Fetch predictions for all nodes
@@ -176,9 +178,32 @@ export default function App() {
           </div>
         </header>
 
+
+    {/* --- Tab Menu Control Buttons --- */}
+    <div className="flex gap-2 mb-4 p-1 bg-slate-800 rounded-lg w-fit border border-slate-700 mx-6 mt-4">
+      <button 
+        onClick={() => setActiveTab('chat')}
+        className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+          activeTab === 'chat' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        Terminal Chat
+      </button>
+      <button 
+        onClick={() => setActiveTab('topology')}
+        className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+          activeTab === 'topology' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
+        }`}
+      >
+        Live Topology Map
+      </button>
+    </div>
+
+    {activeTab === 'chat' ? (
+      <>
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-950 to-gray-900">
-          {messages.map((msg, idx) => (
+           {messages.map((msg, idx) =>  (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[75%] rounded-2xl px-5 py-4 ${msg.role === 'user'
                   ? 'bg-blue-600 text-white shadow-blue-900/20 shadow-lg'
@@ -229,7 +254,13 @@ export default function App() {
             Secure Air-Gapped Environment • No data leaves this device
           </div>
         </div>
-      </main>
-    </div>
+        </>
+        ) : (
+      <div className="flex-1 p-6 bg-slate-950 flex flex-col items-center justify-center">
+        <TopologyView />
+      </div>
+    )}
+  </main>
+</div>
   );
 }
