@@ -79,8 +79,6 @@ const TopologyView = () => {
         if (!res.ok) return;
         const data: TelemetryMap = await res.json();
         setTelemetry(data);
-        
-        // Safety: Clear selection if anomaly is gone
         setSelectedAnomaly(prev => (prev && data[prev]?.anomaly) ? prev : null);
       } catch {}
     };
@@ -121,6 +119,24 @@ const TopologyView = () => {
             width={dimensions.width} height={dimensions.height}
             backgroundColor="transparent"
             nodeColor={(node: any) => getNodeColor(node, telemetry)}
+            linkColor={() => '#64748b'}
+            linkWidth={1.5}
+            nodeCanvasObjectMode={() => 'after'}
+            nodeCanvasObject={(node: any, ctx, globalScale) => {
+              const t = telemetry[node.id];
+              if (t?.anomaly) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI);
+                ctx.strokeStyle = getSeverityBorderColor(t.severity) + '88';
+                ctx.lineWidth = 2 / globalScale;
+                ctx.stroke();
+              }
+              const label = node.name;
+              ctx.font = `${12 / globalScale}px monospace`;
+              ctx.fillStyle = '#e2e8f0';
+              ctx.textAlign = 'center';
+              ctx.fillText(label, node.x, node.y + 16 / globalScale);
+            }}
             onNodeClick={(node: any) => { if (telemetry[node.id]?.anomaly) setSelectedAnomaly(node.id); }}
           />
         )}

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Activity, Server, AlertTriangle, CheckCircle, Send, Terminal, Loader2 } from 'lucide-react';
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 type NodeStatus = 'healthy' | 'warning' | 'critical' | 'failed' | 'loading';
 
@@ -48,6 +48,7 @@ const renderMessageWithCitations = (text: string) => {
         return <span key={index}>{part}</span>;
     });
 };
+
 export default function App() {
   const [nodes, setNodes] = useState<NetworkNode[]>(initialNodes);
   const [chatInput, setChatInput] = useState('');
@@ -59,26 +60,31 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'chat' | 'topology'>('chat');
 
   useEffect(() => {
-    // Fetch predictions for all nodes
     const fetchPredictions = async () => {
-      const updatedNodes = await Promise.all(nodes.map(async (node) => {
-        try {
-          const res = await axios.post(`${API_BASE}/predict`, {
-            cpu_usage: node.cpu,
-            memory_usage: node.memory,
-            temperature: node.temp,
-            latency: node.latency,
-            packet_loss: node.loss
-          });
-          return { ...node, status: res.data.prediction as NodeStatus };
-        } catch (e) {
-          console.error(e);
-          return { ...node, status: 'warning' as NodeStatus };
-        }
-      }));
-      setNodes(updatedNodes);
+      try {
+        const updatedNodes = await Promise.all(nodes.map(async (node) => {
+          try {
+            const res = await axios.post(`${API_BASE}/predict`, {
+              cpu_usage: node.cpu,
+              memory_usage: node.memory,
+              temperature: node.temp,
+              latency: node.latency,
+              packet_loss: node.loss
+            });
+            return { ...node, status: res.data.prediction as NodeStatus };
+          } catch (e) {
+            return { ...node, status: 'warning' as NodeStatus };
+          }
+        }));
+        setNodes(updatedNodes);
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
     };
+
     fetchPredictions();
+    const intervalId = setInterval(fetchPredictions, 3000);
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -88,7 +94,6 @@ export default function App() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isChatLoading) return;
-
     const userMessage = chatInput.trim();
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setChatInput('');
@@ -98,7 +103,6 @@ export default function App() {
       const res = await axios.post(`${API_BASE}/chat`, { message: userMessage });
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }]);
     } catch (e) {
-      console.error(e);
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error: Unable to reach Copilot Backend.' }]);
     } finally {
       setIsChatLoading(false);
@@ -127,7 +131,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-100 font-sans overflow-hidden">
-      {/* Sidebar: Telemetry Dashboard */}
       <aside className="w-80 bg-gray-900 border-r border-gray-800 flex flex-col shadow-2xl z-10">
         <div className="p-6 border-b border-gray-800 flex items-center gap-3">
           <Activity className="text-cyan-400" size={24} />
@@ -135,7 +138,6 @@ export default function App() {
             NetOps AI
           </h1>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Live Nodes</h2>
           {nodes.map(node => (
@@ -150,7 +152,6 @@ export default function App() {
                 </div>
               </div>
               <div className="text-xs text-gray-400 mb-3">{node.type} | {node.ip}</div>
-
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-gray-900 rounded p-2">
                   <span className="text-gray-500 block mb-1">CPU</span>
@@ -165,102 +166,40 @@ export default function App() {
           ))}
         </div>
       </aside>
-
-      {/* Main Content: Copilot Chat */}
       <main className="flex-1 flex flex-col relative">
-        {/* Header */}
         <header className="h-16 border-b border-gray-800 flex items-center px-6 bg-gray-900/50 backdrop-blur-md sticky top-0 z-10">
           <Terminal size={20} className="text-gray-400 mr-3" />
           <h2 className="text-lg font-medium text-gray-200">Air-Gapped Copilot</h2>
-          <div className="ml-auto flex items-center gap-2 text-xs text-green-400 bg-green-400/10 px-3 py-1.5 rounded-full border border-green-400/20">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Local AI Active (qwen3:14b)
-          </div>
         </header>
-
-
-    {/* --- Tab Menu Control Buttons --- */}
-    <div className="flex gap-2 mb-4 p-1 bg-slate-800 rounded-lg w-fit border border-slate-700 mx-6 mt-4">
-      <button 
-        onClick={() => setActiveTab('chat')}
-        className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-          activeTab === 'chat' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        Terminal Chat
-      </button>
-      <button 
-        onClick={() => setActiveTab('topology')}
-        className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
-          activeTab === 'topology' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'
-        }`}
-      >
-        Live Topology Map
-      </button>
-    </div>
-
-    {activeTab === 'chat' ? (
-      <>
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-950 to-gray-900">
-           {messages.map((msg, idx) =>  (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-5 py-4 ${msg.role === 'user'
-                  ? 'bg-blue-600 text-white shadow-blue-900/20 shadow-lg'
-                  : 'bg-gray-800 text-gray-200 border border-gray-700 shadow-xl'
-                }`}>
-                {msg.role === 'assistant' && (
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-700/50 text-xs font-medium text-cyan-400 uppercase tracking-wide">
-                    <Terminal size={12} />
-                    NetOps Assistant
+        <div className="flex gap-2 mb-4 p-1 bg-slate-800 rounded-lg w-fit border border-slate-700 mx-6 mt-4">
+          <button onClick={() => setActiveTab('chat')} className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'chat' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Terminal Chat</button>
+          <button onClick={() => setActiveTab('topology')} className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'topology' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Live Topology Map</button>
+        </div>
+        {activeTab === 'chat' ? (
+          <>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-950 to-gray-900">
+               {messages.map((msg, idx) =>  (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[75%] rounded-2xl px-5 py-4 ${msg.role === 'user' ? 'bg-blue-600 text-white shadow-blue-900/20 shadow-lg' : 'bg-gray-800 text-gray-200 border border-gray-700 shadow-xl'}`}>
+                    {msg.role === 'assistant' && <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-700/50 text-xs font-medium text-cyan-400 uppercase tracking-wide"><Terminal size={12} />NetOps Assistant</div>}
+                    <div className="whitespace-pre-wrap leading-relaxed text-sm">{renderMessageWithCitations(msg.content)}</div>
                   </div>
-                )}
-                <div className="whitespace-pre-wrap leading-relaxed text-sm">
-                  {renderMessageWithCitations(msg.content)}
                 </div>
-              </div>
+              ))}
+              {isChatLoading && <div className="flex justify-start"><div className="bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 shadow-xl flex items-center gap-3 text-sm text-gray-400"><Loader2 size={16} className="animate-spin text-cyan-400" />Querying local vectors and reasoning...</div></div>}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          {isChatLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 shadow-xl flex items-center gap-3 text-sm text-gray-400">
-                <Loader2 size={16} className="animate-spin text-cyan-400" />
-                Querying local vectors and reasoning...
-              </div>
+            <div className="p-6 bg-gray-900 border-t border-gray-800">
+              <form onSubmit={handleSendMessage} className="relative max-w-4xl mx-auto">
+                <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Ask about node failures..." className="w-full bg-gray-950 border border-gray-700 rounded-xl pl-5 pr-14 py-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all" />
+                <button type="submit" disabled={isChatLoading || !chatInput.trim()} className="absolute right-2 top-2 bottom-2 bg-blue-600 rounded-lg px-4"><Send size={18} /></button>
+              </form>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Chat Input */}
-        <div className="p-6 bg-gray-900 border-t border-gray-800">
-          <form onSubmit={handleSendMessage} className="relative max-w-4xl mx-auto">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask about node failures, or request a config change..."
-              className="w-full bg-gray-950 border border-gray-700 rounded-xl pl-5 pr-14 py-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all shadow-inner"
-            />
-            <button
-              type="submit"
-              disabled={isChatLoading || !chatInput.trim()}
-              className="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-lg px-4 flex items-center justify-center transition-colors"
-            >
-              <Send size={18} />
-            </button>
-          </form>
-          <div className="text-center mt-3 text-xs text-gray-600">
-            Secure Air-Gapped Environment • No data leaves this device
-          </div>
-        </div>
-        </>
+          </>
         ) : (
-      <div className="flex-1 p-6 bg-slate-950 flex flex-col items-center justify-center">
-        <TopologyView />
-      </div>
-    )}
-  </main>
-</div>
+          <div className="flex-1 p-6 bg-slate-950 flex flex-col items-center justify-center"><TopologyView /></div>
+        )}
+      </main>
+    </div>
   );
 }

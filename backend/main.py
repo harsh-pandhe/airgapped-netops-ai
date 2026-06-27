@@ -1,24 +1,38 @@
-from graph_manager import manager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 import ml_model
 import rag_system
 from graph_manager import manager
 
-app = FastAPI(title="Air-Gapped NetOps AI")
+# --- Lifecycle Manager (Modern FastAPI) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Pre-train model and init RAG
+    try:
+        print("Starting up NetOps AI backend...")
+        ml_model.train_model()
+        rag_system.init_rag()
+        manager.seed_data()
+    except Exception as e:
+        print(f"Startup initialization error: {e}")
+    yield
+    # Shutdown logic if needed
+    print("Shutting down...")
 
-from fastapi.middleware.cors import CORSMiddleware
+app = FastAPI(title="Air-Gapped NetOps AI", lifespan=lifespan)
 
-# Add this right after app = FastAPI()
+# --- CORS Configuration ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Your frontend URL
+    allow_origins=["*"],  # Allows all origins to prevent connection errors
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# --- Pydantic Data Models ---
 class PredictRequest(BaseModel):
     cpu_usage: float
     memory_usage: float
@@ -29,40 +43,47 @@ class PredictRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
 
-@app.on_event("startup")
-async def startup_event():
-    # Pre-train the model and init RAG on startup to save time on first request
-    try:
-        ml_model.train_model()
-        rag_system.init_rag()
-        manager.seed_data()
-    except Exception as e:
-        print(f"Startup initialization warning: {e}")
+class FeedbackRequest(BaseModel):
+    timestamp: str
+    nodeId: str
+    isCorrect: bool
 
+# --- API Routes ---
 @app.get("/")
 def read_root():
-    return {"message": "Hello World from NetOps Backend!"}
+    return {"message": "NetOps AI Backend Online"}
 
-@app.get("/api/status")
-def status():
-    return {"status": "ok", "service": "NetOps ML & RAG"}
+@app.post("/api/predict")
+def predict(data: PredictRequest):
+    # Ensure this returns a clean string status like 'healthy' or 'critical'
+    result = ml_model.predict_node(
+        data.cpu_usage, data.memory_usage, data.temperature, data.latency, data.packet_loss
+    )
+    # result['anomaly'] is bool, we map it to 'critical' or 'healthy'
+    status = 'critical' if result.get('anomaly') else 'healthy'
+    return {"prediction": status}
+
+@app.post("/api/chat")
+def chat(data: ChatRequest):
+    return {"reply": rag_system.query_chat(data.message)}
 
 @app.get("/api/topology")
 async def get_network_topology():
     return manager.get_graph_data()
 
-@app.post("/api/predict")
-def predict(data: PredictRequest):
-    status_prediction = ml_model.predict_node(
-        data.cpu_usage,
-        data.memory_usage,
-        data.temperature,
-        data.latency,
-        data.packet_loss
-    )
-    return {"prediction": status_prediction}
+@app.get("/api/predict-all")
+async def get_all_predictions():
+    """Returns telemetry for all nodes in the sidebar."""
+    return {
+        "RTR-001": ml_model.predict_node(45.0, 60.0, 55.0, 20.0, 0.1),
+        "RTR-002": ml_model.predict_node(95.0, 95.0, 88.0, 150.0, 25.0),
+        "SW-001": ml_model.predict_node(20.0, 30.0, 40.0, 5.0, 0.0),
+        "FW-001": ml_model.predict_node(85.0, 70.0, 60.0, 50.0, 2.0)
+    }
 
-@app.post("/api/chat")
-def chat(data: ChatRequest):
-    response_text = rag_system.query_chat(data.message)
-    return {"reply": response_text}
+@app.post("/api/feedback")
+async def handle_feedback(data: FeedbackRequest):
+    if not data.isCorrect:
+        ml_model.flag_false_positive(data.timestamp)
+        return {"status": "Model adjusted - False positive logged"}
+    return {"status": "Feedback noted - True positive confirmed"}
