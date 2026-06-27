@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 import ml_model
 import rag_system
 from graph_manager import manager
+from metrics_utils import metrics
+from hardware_monitor import get_system_metrics
 
 # --- Lifecycle Manager (Modern FastAPI) ---
 @asynccontextmanager
@@ -87,3 +89,20 @@ async def handle_feedback(data: FeedbackRequest):
         ml_model.flag_false_positive(data.timestamp)
         return {"status": "Model adjusted - False positive logged"}
     return {"status": "Feedback noted - True positive confirmed"}
+
+@app.get("/api/metrics")
+async def get_metrics():
+    # 1. Calculate performance metrics (Inference/Retrieval)
+    avg_inf = sum(metrics["inference_times"]) / len(metrics["inference_times"]) if metrics["inference_times"] else 0
+    avg_ret = sum(metrics["retrieval_durations"]) / len(metrics["retrieval_durations"]) if metrics["retrieval_durations"] else 0
+    
+    # 2. Get hardware telemetry
+    hardware = get_system_metrics()
+    
+    # 3. Return everything together
+    return {
+        "avg_inference_ms": round(avg_inf, 2),
+        "avg_retrieval_ms": round(avg_ret, 2),
+        "total_tokens": metrics["total_tokens_generated"],
+        "hardware": hardware 
+    }

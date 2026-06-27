@@ -2,6 +2,8 @@ import TopologyView from './TopologyView';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Activity, Server, AlertTriangle, CheckCircle, Send, Terminal, Loader2 } from 'lucide-react';
+import ObservabilityTab from './ObservabilityTab';
+
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -57,7 +59,7 @@ export default function App() {
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'chat' | 'topology'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'topology' | 'observability'>('chat');
 
   useEffect(() => {
     const fetchPredictions = async () => {
@@ -174,6 +176,7 @@ export default function App() {
         <div className="flex gap-2 mb-4 p-1 bg-slate-800 rounded-lg w-fit border border-slate-700 mx-6 mt-4">
           <button onClick={() => setActiveTab('chat')} className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'chat' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Terminal Chat</button>
           <button onClick={() => setActiveTab('topology')} className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'topology' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Live Topology Map</button>
+          <button onClick={() => setActiveTab('observability')} className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${activeTab === 'observability' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Observability</button>
         </div>
         {activeTab === 'chat' ? (
           <>
@@ -196,8 +199,12 @@ export default function App() {
               </form>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'topology' ? (
           <div className="flex-1 p-6 bg-slate-950 flex flex-col items-center justify-center"><TopologyView /></div>
+        ) : (
+          <div className="flex-1 p-6 bg-slate-950 overflow-y-auto">
+            <ObservabilityTab />
+          </div>
         )}
       </main>
     </div>
