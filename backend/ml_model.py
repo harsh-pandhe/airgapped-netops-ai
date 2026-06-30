@@ -291,6 +291,7 @@ def run_daily_retraining_pipeline(window_days: int = 30) -> bool:
 
     global detector
     detector = new_det
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
     joblib.dump(detector, MODEL_PATH)
 
     try:

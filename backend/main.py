@@ -356,16 +356,21 @@ async def list_scenarios():
     return {"scenarios": get_scenario_list()}
 
 @app.post("/api/demo/inject")
-async def inject_demo(scenario: str, user: TokenData = Depends(get_current_user)):
+async def inject_demo(scenario: str,
+                      user: TokenData = Depends(require_permission("can_crud_topology"))):
     try:
         result = inject_scenario(scenario, engine)
+        log_event(user.username, user.role, "SCENARIO_INJECTED",
+                  metadata={"scenario": scenario})
         return result
     except ValueError as e:
         raise HTTPException(400, str(e))
 
 @app.post("/api/demo/reset")
-async def reset_demo(user: TokenData = Depends(get_current_user)):
-    return reset_scenarios(engine)
+async def reset_demo(user: TokenData = Depends(require_permission("can_crud_topology"))):
+    result = reset_scenarios(engine)
+    log_event(user.username, user.role, "SCENARIO_RESET")
+    return result
 
 
 # ── WebSocket (Track 13) ─────────────────────────────────────────────────────

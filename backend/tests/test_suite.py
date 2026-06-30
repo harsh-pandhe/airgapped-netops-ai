@@ -352,8 +352,9 @@ class TestIntentClassifier:
 
 class TestAuth:
     def test_seed_and_authenticate(self, tmp_path, monkeypatch):
-        import config
+        import config, auth
         monkeypatch.setattr(config, "AUTH_DB_PATH", str(tmp_path / "auth_test.db"))
+        monkeypatch.setattr(auth, "DEMO_MODE", True)
         from auth import seed_default_users, authenticate_user
         seed_default_users()
         user = authenticate_user("operator", "operator123")
@@ -361,8 +362,9 @@ class TestAuth:
         assert user["role"] == "read_only_operator"
 
     def test_wrong_password(self, tmp_path, monkeypatch):
-        import config
+        import config, auth
         monkeypatch.setattr(config, "AUTH_DB_PATH", str(tmp_path / "auth_test2.db"))
+        monkeypatch.setattr(auth, "DEMO_MODE", True)
         from auth import seed_default_users, authenticate_user
         seed_default_users()
         assert authenticate_user("operator", "wrongpass") is None

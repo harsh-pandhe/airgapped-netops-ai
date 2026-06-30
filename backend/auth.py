@@ -11,17 +11,18 @@ Device Domains:
   dmz  : SW-001
 """
 
+import os
 import sqlite3
-import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
-from config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRY_HOURS, AUTH_DB_PATH
+from config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRY_HOURS, AUTH_DB_PATH, DEMO_MODE
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -71,13 +72,33 @@ def _get_conn() -> sqlite3.Connection:
 
 
 def _hash(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def _verify(password: str, stored_hash: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode(), stored_hash.encode())
+    except (ValueError, TypeError):
+        return False
 
 
 def seed_default_users():
+    """Seed demo accounts. Only runs when DEMO_MODE=true, or when explicit
+    DEFAULT_OPERATOR_PASSWORD / DEFAULT_ARCHITECT_PASSWORD env vars are set.
+    Refuses to seed hardcoded credentials in a non-demo deployment."""
+    op_pw   = os.environ.get("DEFAULT_OPERATOR_PASSWORD")
+    arch_pw = os.environ.get("DEFAULT_ARCHITECT_PASSWORD")
+
+    if DEMO_MODE:
+        op_pw   = op_pw   or "operator123"
+        arch_pw = arch_pw or "architect123"
+    elif not (op_pw and arch_pw):
+        # Non-demo and no explicit passwords provided — do not seed.
+        return
+
     defaults = [
-        ("operator",  "operator123",  "read_only_operator", "core,dmz"),
-        ("architect", "architect123", "network_architect",  "*"),
+        ("operator",  op_pw,   "read_only_operator", "core,dmz"),
+        ("architect", arch_pw, "network_architect",  "*"),
     ]
     with _get_conn() as conn:
         for username, pw, role, domains in defaults:
@@ -107,10 +128,13 @@ class TokenData(BaseModel):
 
 def authenticate_user(username: str, password: str) -> Optional[sqlite3.Row]:
     with _get_conn() as conn:
-        return conn.execute(
-            "SELECT * FROM users WHERE username=? AND password_hash=?",
-            (username, _hash(password))
+        row = conn.execute(
+            "SELECT * FROM users WHERE username=?",
+            (username,)
         ).fetchone()
+    if row and _verify(password, row["password_hash"]):
+        return row
+    return None
 
 
 def create_access_token(username: str, role: str, domains: list[str]) -> str:
