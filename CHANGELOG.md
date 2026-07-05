@@ -20,6 +20,7 @@ All notable changes to this project are documented here. Format based on
 ### Fixed
 - Retraining pipeline no longer crashes when the model directory does not exist
   (`os.makedirs(..., exist_ok=True)` before `joblib.dump`).
+- Flaky unit test `test_known_normal_not_flagged` by retuning the test query point to fall within the training distribution range.
 
 ## [0.1.0] — MVP
 

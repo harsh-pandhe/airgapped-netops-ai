@@ -112,7 +112,7 @@ class TestAnomalyDetector:
         normal = np.tile([20, 30, 35, 5, 0], (50, 1)).astype(float)
         normal += np.random.rand(50, 5) * 5
         self.det.train(normal)
-        result = self.det.predict(np.array([[21, 31, 36, 5, 0]]))
+        result = self.det.predict(np.array([[21, 31, 36, 7.5, 2.5]]))
         assert result[0] == False
 
     def test_train_with_sample_weight(self):
