@@ -1,0 +1,15 @@
+# All changes require review from the maintainer.
+# Override specific directories as the team grows.
+
+*                   @harsh-pandhe
+
+# Backend — ML and RAG are high-risk; require explicit sign-off
+/backend/ml_model.py        @harsh-pandhe
+/backend/rag_system.py      @harsh-pandhe
+/backend/auth.py            @harsh-pandhe
+/backend/audit_log.py       @harsh-pandhe
+
+# CI and deployment config — any change here affects all contributors
+/.github/                   @harsh-pandhe
+/docker-compose.yml         @harsh-pandhe
+/Makefile                   @harsh-pandhe

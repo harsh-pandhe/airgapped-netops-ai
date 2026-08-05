@@ -1,10 +1,34 @@
 # Python
 backend/venv/
-backend/__pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 *.pyd
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# SQLite — never commit runtime data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Telemetry data — runtime-accumulated, not source
+data/accumulated_telemetry.csv
+data/false_positives.csv
+
+# Model artifacts — bundle separately for air-gap export
 backend/chroma_db/
+backend/models/
+*.joblib
+*.pkl
+*.pt
+*.safetensors
 
 # Node.js
 frontend/node_modules/
@@ -20,6 +44,7 @@ yarn-error.log*
 
 # OS / IDE
 .DS_Store
+Thumbs.db
 .vscode/
 .idea/
 *.suo
@@ -27,3 +52,16 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Distribution
+dist/
+*.tar.gz
+
+# Secrets — must never reach git
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.crt
