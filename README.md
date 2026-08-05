@@ -1,5 +1,8 @@
 # Air-Gapped NetOps AI — Predictive Copilot for Secure MPLS Operations
 
+[![CI](https://github.com/harsh-pandhe/airgapped-netops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/harsh-pandhe/airgapped-netops-ai/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/harsh-pandhe/airgapped-netops-ai/graph/badge.svg?token=IMF0HJ76DX)](https://codecov.io/github/harsh-pandhe/airgapped-netops-ai)
+
 An autonomous, **fully air-gapped** NOC copilot that predicts network degradation before
 service impact, explains its reasoning in natural language, and runs entirely offline — no
 cloud APIs, no outbound inference. Built for regulated and government SD-WAN / MPLS
