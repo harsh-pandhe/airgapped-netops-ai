@@ -69,7 +69,7 @@ jobs:
             --cov-report=xml:coverage.xml \
             --cov-fail-under=70 \
             -v
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v7
         with:
           file: coverage.xml
           fail_ci_if_error: false
