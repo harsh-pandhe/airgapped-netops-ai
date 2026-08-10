@@ -38,4 +38,4 @@ bcrypt==5.0.0
 # Observability / system
 psutil==7.2.2
 pynvml==13.0.1
-apscheduler==3.11.0
+apscheduler==3.11.3
