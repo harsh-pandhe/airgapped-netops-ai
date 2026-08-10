@@ -49,7 +49,7 @@ jobs:
           cp docker-compose.yml Makefile .env.example release/
           tar -czf "netops-ai-${GITHUB_REF_NAME}.tar.gz" -C release .
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           body: ${{ steps.changelog.notes }}
           files: "netops-ai-*.tar.gz"
