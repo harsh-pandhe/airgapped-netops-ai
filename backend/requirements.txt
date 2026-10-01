@@ -32,7 +32,7 @@ pysnmp==7.1.27
 websockets==15.0.1
 
 # Auth / security
-PyJWT==2.13.0
+PyJWT==2.15.0
 bcrypt==5.0.0
 
 # Observability / system
